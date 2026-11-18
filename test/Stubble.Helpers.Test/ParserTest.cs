@@ -10,6 +10,19 @@ namespace Stubble.Helpers.Test
 {
     public class ParserTest
     {
+        [Theory]
+        [InlineData("{{MyHelper 'a|b'}}")]
+        [InlineData("{{MyHelper \"a|b\"}}")]
+        public void QuotedPipesDoNotCreatePipelineStages(string template)
+        {
+            var helpers = new Helpers().Register<string>("MyHelper", (context, value) => value);
+            var tokens = new InstanceMustacheParser().Parse(template, pipeline: BuildHelperPipeline(helpers));
+            var token = tokens.Children.Should().ContainSingle().Which.Should().BeOfType<HelperToken>().Subject;
+
+            token.Args.Should().ContainSingle().Which.Should().Be(new HelperArgument("a|b", false));
+            token.Pipeline.Should().BeEmpty();
+        }
+
         public ParserPipeline BuildHelperPipeline(Helpers helpers)
         {
             var builder = new ParserPipelineBuilder();
